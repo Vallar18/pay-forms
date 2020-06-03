@@ -1,0 +1,310 @@
+<div style="display: flex">
+  <button class="btn" (click)="changeState('isLogin')">login</button>
+  <button class="btn" (click)="changeState('isUser')">auth user</button>
+  <button class="btn" (click)="changeState('isSelectMethodPay')">select method pay</button>
+  <button class="btn" (click)="changeState('isCard')">card</button>
+  <button class="btn" (click)="changeState('isSelectCard')">select card</button>
+  <button class="btn" (click)="changeState('isBilling')">billing</button>
+  <button class="btn" (click)="changeState('isResult')">result</button>
+</div>
+
+<div class="container">
+  <div class="pay">
+    <div class="pay-header">
+      <div class="pay-header__logo">
+        <img src="assets/zenpayments_white.png" alt="">
+      </div>
+      <div class="pay-header__title">
+        <div class="pay-header__top">
+          <h3 style="margin: 0 10px">{{form.name}}</h3>
+          <h3 style="margin: 0">{{form.total}}$</h3>
+        </div>
+        <div class="pay-header__footer">
+          <div>
+            Type : {{form.is_recurring ? 'Every ' + form.recurring_period_amount + ' '
+            + form.recurring_period : 'No'}}
+          </div>
+          <div>
+            Trial : {{form.isTrial ? 'Yes' : 'No'}}
+          </div>
+        </div>
+      </div>
+    </div>
+    <ng-container *ngIf="showTopBar()">
+      <div class="topbar">
+        <div class="current-state pointer" (click)="back()">
+          <mat-icon>arrow_back_ios</mat-icon>
+          <span>{{currentState.title}}</span>
+        </div>
+        <div class="user-info">
+          <div> {{loginForm.value.username}}</div>
+          <div></div>
+        </div>
+      </div>
+    </ng-container>
+    <div class="pay-body">
+      <!--    <mat-progress-spinner > </mat-progress-spinner>-->
+      <ng-container *ngIf="configState.isLogin" [ngTemplateOutlet]="payLogin"></ng-container>
+      <ng-container *ngIf="configState.isUser" [ngTemplateOutlet]="payUser"></ng-container>
+      <ng-container *ngIf="configState.isSelectMethodPay" [ngTemplateOutlet]="paySelectMethod"></ng-container>
+      <ng-container *ngIf="configState.isCard" [ngTemplateOutlet]="payCard"></ng-container>
+      <ng-container *ngIf="configState.isSelectCard" [ngTemplateOutlet]="paySelectCard"></ng-container>
+      <ng-container *ngIf="configState.isBilling" [ngTemplateOutlet]="payBilling"></ng-container>
+      <ng-container *ngIf="configState.isResult" [ngTemplateOutlet]="payResult"></ng-container>
+    </div>
+  </div>
+</div>
+
+<!--USER-->
+<ng-template #payUser>
+  <form class="form" [formGroup]="userForm" autocomplete="off">
+    <div class="form-group">
+      <mat-form-field>
+        <input matInput placeholder="First name"
+               formControlName="first_name" autocomplete="off"/>
+        <mat-error *ngIf="isControlHasError(userForm,'first_name','required')">
+          First name is required
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput placeholder="Last name"
+               formControlName="last_name" autocomplete="off"/>
+        <mat-error *ngIf="isControlHasError(userForm,'last_name','required')">
+          Last name is required
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput placeholder="Email" type="email"
+               formControlName="email" autocomplete="off"/>
+        <mat-error *ngIf="isControlHasError(userForm,'email','required')">
+          Email is required
+        </mat-error>
+        <mat-error *ngIf="isControlHasError(userForm, 'email','email')">
+          Email is not valid
+        </mat-error>
+      </mat-form-field>
+    </div>
+    <button class="btn btn-primary btn-elevate" (click)="saveUser()"
+            style="margin-top: 10px">Save User
+    </button>
+    <!--end::Action-->
+  </form>
+</ng-template>
+
+<!--  LOGIN-->
+<ng-template #payLogin>
+  <form class="form" [formGroup]="loginForm" autocomplete="off">
+    <div class="form-group">
+      <mat-form-field>
+        <input matInput placeholder="Email" type="email"
+               formControlName="username" autocomplete="off"/>
+        <mat-error *ngIf="isControlHasError(loginForm,'username','required')">
+          Email is required
+        </mat-error>
+        <mat-error *ngIf="isControlHasError(loginForm, 'username','email')">
+          Email is not valid
+        </mat-error>
+      </mat-form-field>
+    </div>
+    <div class="form-group">
+      <mat-form-field>
+        <input matInput type="password" placeholder="password"
+               formControlName="password" autocomplete="off"/>
+        <mat-error *ngIf="isControlHasError(loginForm,'password','required')">
+          Password is required
+        </mat-error>
+      </mat-form-field>
+    </div>
+    <!--begin::Action-->
+    <button class="btn btn-primary btn-elevate" (click)="login()"
+            style="margin-top: 10px">Login
+    </button>
+    <!--end::Action-->
+  </form>
+</ng-template>
+
+<!--SELECT Method pay -->
+<ng-template #paySelectMethod>
+  <div *ngIf="params.auth" class="user-info">
+    <div> {{loginForm.value.username}}</div>
+    <div (click)="changeState('isLogin')" class="pointer"> Edit</div>
+  </div>
+  <mat-list>
+    <h4 style="margin: 0">Choose your preferred method</h4>
+    <mat-list-item *ngFor="let method of form.methods" class="pointer" (click)="selectMethod(method)">
+      <div mat-line>{{method.name}}</div>
+    </mat-list-item>
+  </mat-list>
+</ng-template>
+
+
+<!--Card-->
+<ng-template #payCard>
+  <ng-container *ngIf="userCards && userCards.length">
+    <mat-list>
+      <mat-list-item class="pointer" (click)="go('Select Card', 'isSelectCard')">
+        <mat-icon mat-list-icon>credit_card</mat-icon>
+        <div mat-line><span>Select saved credit card</span></div>
+      </mat-list-item>
+    </mat-list>
+  </ng-container>
+
+
+  <form [formGroup]="cardForm" novalidate>
+    <div class="form-group credit-card">
+      <!--  <form class="form" [formGroup]="cardForm" autocomplete="off">-->
+      <mat-form-field>
+        <input matInput placeholder="Card number" id="cc-number" formControlName="number" type="tel"
+               autocomplete="cc-number" ccNumber #ccNumber="ccNumber">
+        <span class="scheme"
+              *ngIf="(ccNumber.resolvedScheme$ | async) != 'unknown'">{{ccNumber.resolvedScheme$ | async}}</span>
+        <mat-error>
+          Card number is not valid
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput type="tel" placeholder=" MM/YYYY " id="cc-exp-date" formControlName="expirationDate"
+               autocomplete="cc-exp" ccExp>
+        <mat-error>
+          Date is not valid
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput type="tel" placeholder="Cvv" id="cc-cvc" formControlName="cvc"
+               autocomplete="off" ccCvc maxLength="4">
+        <mat-error>
+          Cvc is not valid
+        </mat-error>
+      </mat-form-field>
+      <mat-checkbox formControlName="save_card">Remember Card</mat-checkbox>
+    </div>
+
+    <!--begin::Action-->
+    <button class="btn btn-primary btn-elevate" style="margin-top: 1.25em;" (click)="saveCard()">Save card</button>
+    <!--end::Action-->
+  </form>
+</ng-template>
+
+
+<!--paySelectCard-->
+<ng-template #paySelectCard>
+  <h4 style="margin: 5px 0">Select credit card</h4>
+  <mat-list>
+    <mat-list-item *ngFor="let card of userCards" class="pointer" (click)="selectCard(card)">
+      <mat-icon mat-list-icon>credit_card</mat-icon>
+      <div mat-line>**** {{card.data.number_short}}</div>
+      <div mat-line>{{card.data.brand}}</div>
+    </mat-list-item>
+  </mat-list>
+</ng-template>
+
+<!--payBilling-->
+<ng-template #payBilling>
+  <form class="form" [formGroup]="billingForm" autocomplete="off">
+    <div class="form-group">
+      <mat-form-field>
+        <input matInput type="text"
+               placeholder="Search for a countries"
+               formControlName="billing_country"
+               [matAutocomplete]="auto">
+        <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn"
+                          (optionSelected)='selectCountry($event.option.value)'>
+          <mat-option *ngFor="let country of filteredCountries | async" [value]="country">
+            {{country.name}}
+          </mat-option>
+          <mat-option *ngIf="!(filteredCountries | async)?.length" disabled>
+            No records found
+          </mat-option>
+        </mat-autocomplete>
+        <mat-error *ngIf="isControlHasError(billingForm,'billing_country','required')">
+          Country field is required
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput placeholder="Zipcode"
+               formControlName="billing_zipcode"/>
+        <mat-error *ngIf="isControlHasError(billingForm,'billing_zipcode','required')">
+          Zipcode field is required
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput placeholder="Address"
+               formControlName="billing_address"/>
+        <mat-error *ngIf="isControlHasError(billingForm,'billing_address','required')">
+          Address field is required
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput placeholder="City"
+               formControlName="billing_city"/>
+        <mat-error *ngIf="isControlHasError(billingForm,'billing_city','required')">
+          City field is required
+        </mat-error>
+      </mat-form-field>
+      <ng-container *ngIf="showStateUs">
+        <mat-form-field>
+          <mat-label>Choose state</mat-label>
+          <mat-select formControlName="billing_state">
+            <mat-option *ngFor="let state of states" value="{{state.code}}">
+              {{state.name}}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="isControlHasError(billingForm,'billing_state','required')">
+            State field is required
+          </mat-error>
+        </mat-form-field>
+      </ng-container>
+      <ng-container *ngIf="!showStateUs">
+        <mat-form-field>
+          <input matInput placeholder="State"
+                 formControlName="billing_state"/>
+          <mat-error *ngIf="isControlHasError(billingForm,'billing_state','required')">
+            State field is required
+          </mat-error>
+        </mat-form-field>
+      </ng-container>
+    </div>
+
+    <!--begin::Action-->
+    <button class="btn btn-primary btn-elevate" (click)="saveBilling()"
+            style="margin-top: 10px;">Save billing
+    </button>
+    <!--end::Action-->
+  </form>
+</ng-template>
+
+<!--payResult-->
+<ng-template #payResult>
+  <ng-container>
+    <mat-list>
+      <mat-list-item>
+        <div mat-line>
+          User: {{userForm.value.email}}
+        </div>
+      </mat-list-item>
+      <mat-list-item>
+        <ng-container *ngIf="method.type === 'creditcard'">
+          <div mat-line>
+            Card number: <span *ngIf="card.number">
+          {{card.number}}
+        </span>
+            <span *ngIf="!card.number">
+          {{card.data?.number_short ? '**** ' + card.data?.number_short : ''}}
+          </span>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="method.type != 'creditcard'">
+          <div mat-line>
+            Pay method:  {{method.name}}
+          </div>
+        </ng-container>
+      </mat-list-item>
+      <mat-list-item>
+        <div mat-line>
+          Total: {{form.total}}$
+        </div>
+      </mat-list-item>
+    </mat-list>
+    <button class="btn btn-primary btn-elevate">Pay</button>
+  </ng-container>
+</ng-template>
