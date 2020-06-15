@@ -1,6 +1,9 @@
 /* You can add global styles to this file, and also import other style files */
 
-html, body { height: 100%; }
+html, body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: Poppins, Helvetica, sans-serif;
@@ -9,5 +12,15 @@ body {
   line-height: 1.5;
   color: #212529;
   text-align: left;
-  background-color: #f8f7fb;
+}
+
+@font-face {
+  font-family: 'zen';
+  src: url('./assets/font/zen.eot?13455500');
+  src: url('./assets/font/zen.eot?13455500#iefix') format('embedded-opentype'),
+  url('./assets/font/zen.woff?13455500') format('woff'),
+  url('./assets/font/zen.ttf?13455500') format('truetype'),
+  url('./assets/font/zen.svg?13455500#zen') format('svg');
+  font-weight: normal;
+  font-style: normal;
 }

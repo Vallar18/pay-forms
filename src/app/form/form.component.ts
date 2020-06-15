@@ -1,13 +1,16 @@
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
-import {PayService} from '../components/service/pay.service';
-import {environment} from '../../environments/environment';
 import {catchError, map, startWith} from 'rxjs/operators';
 import {Observable, of} from 'rxjs';
+import {CreditCardValidators} from 'angular-cc-library';
+
+import {environment} from '../../environments/environment';
 import {COUNTRY} from '../components/consts/country.const';
 import {STATE_US} from '../components/consts/state.const';
-import {CreditCardValidators} from 'angular-cc-library';
+import {PayService} from '../components/service/pay.service';
+
+import Pusher from 'pusher-js';
 
 @Component({
   selector: 'app-form',
@@ -22,19 +25,16 @@ export class FormComponent implements OnInit {
 
   showStateUs = false;
 
-  params = {
-    type: 'embed', // - по умолчанию если не указано - modal
-    auth: true,  // - по умолчанию если не указано - true
-    form: 1, //  - обязательное поле
-    client_id: '7fc2bc80-30c4-45da-821c-e6d7ab0fbbf2', //  - обязательное поле
-    token: undefined, // - для авторизации. не обязательное.
-    target: '', // для модального окна триггер/ для встраиваемого где появляться
-    user: {
-      email: 'admin@admin.com',
-      first_name: 'test f name',
-      last_name: 'test l name'
-    }
-  };
+  params: any = {};
+
+  pushInfo: any = {
+    key: '7e30e7c146f87e5ee807',
+    cluster: 'mt1',
+    channel: 'events.', // + сгенерирований push_id,
+    event: 'events.form'
+  }
+  push_id: string = '';
+  paidStatusText: string = '';
 
   configState = {
     isLogin: false,
@@ -44,7 +44,7 @@ export class FormComponent implements OnInit {
     isSelectCard: false,
     isBilling: false,
     isResult: false,
-
+    isPaidStatus: false
   };
 
   currentState = {
@@ -52,7 +52,7 @@ export class FormComponent implements OnInit {
     path: ''
   };
 
-  // loading: boolean = true;
+  loading = false;
 
   user: any = {};
   form: any = {};
@@ -71,27 +71,106 @@ export class FormComponent implements OnInit {
   }
 
   ngOnInit() {
+    
+    this.params = {
+      type: 'modal', // - по умолчанию если не указано - modal
+      auth: true,  // - по умолчанию если не указано - true
+      form: 7, //  - обязательное поле
+      client_id: '7fc2bc80-30c4-45da-821c-e6d7ab0fbbf2', //  - обязательное поле
+      token: undefined, // - для авторизации. не обязательное.
+      target: '', // для модального окна триггер/ для встраиваемого где появляться
+      email: 'admin@admin.com',
+      first_name: 'test f name',
+      last_name: 'test l name',
+      success_url: 'https://www.google.com/',  //paid
+      cancel_url: 'http', // пока нет
+      id: ''
+    }
+    
+      // !paid  -> try again - страница с информацией о оплате
+
     this.checkConfig(this.params);
-    this.createUserForm();
-    this.createLoginForm();
+    // this.route.queryParams.subscribe(res => {
+    //   if (res && res.form) {
+    //     if (res.auth) {
+    //       this.params.auth = (res.auth === 'true');
+    //     }
+    //     if (res.token) {
+    //       this.params.token = res.token && res.token.length && res.token !== 'undefined' && res.token !== 'null' ? res.token : undefined;
+    //     }
+    //     this.params = {...res, ...this.params};
+    //     this.checkConfig(this.params);
+    //   }
+    // });
+
+    
+    this.subscribePusher()
+
+    // this.createUserForm();
+    // this.createLoginForm();
     this.createCardForm();
     this.createBillingForm();
   }
 
+  subscribePusher() {
+
+    this.push_id = Math.random().toString(16).substr(2, 8) + Math.random().toString(16).substr(2, 8);
+    console.log(this.push_id);
+
+    const pusher = new Pusher(this.pushInfo.key, {
+      cluster: this.pushInfo.cluster,
+    });;
+
+    const channel = pusher.subscribe(this.pushInfo + this.push_id)
+    
+    channel.bind(this.pushInfo.event, function(data) {
+        this.checkPaidStatus(data);
+    });
+  }
+
+  checkPaidStatus(data: any){
+// paid - Your payment successful 
+// processing - Your payment Processing, yo will get notification soon
+// failed - Your Payment Failed. и тут мы скоро добавим еще информацию что конкретно не так
+// forbidden - Sorry your payment declined. Try later
+    switch(data.status){
+      case 'paid': 
+        if(this.params.success_url && this.params.success_url.length){
+          window.open(this.params.success_url);
+        }
+        break;
+      case 'processing': 
+        this.paidStatusText = 'Your payment Processing, yo will get notification soon';
+        this.go('', 'isPaidStatus')
+        break;
+      case 'failed': 
+        this.paidStatusText = 'Your Payment Failed. и тут мы скоро добавим еще информацию что конкретно не так';
+        this.go('', 'isPaidStatus')
+        break;
+      case 'forbidden': 
+        this.paidStatusText = 'Sorry your payment declined. Try later';
+        this.go('', 'isPaidStatus')
+        break;
+        
+      default: 
+      console.log('check paid status --error swich')
+    }
+  } 
+
   checkConfig(params: any) {
     localStorage.setItem(environment.clientId, params.client_id);
-    if (params.token) {
+    if (params.token && params.token !== 'undefined') {
       localStorage.setItem(environment.authTokenKey, params.token);
       this.getUser();
     }
 
     if (!params.auth && (!params.token || !params.token.length)) {
-      // this.createUserForm();
+      this.createUserForm();
       this.changeState('isUser');
     }
 
     if (params.auth && (!params.token || !params.token.length)) {
-      // this.createLoginForm();
+      this.createLoginForm();
       this.changeState('isLogin');
     }
 
@@ -104,10 +183,7 @@ export class FormComponent implements OnInit {
     Object.keys(this.configState).map(field => {
       this.configState[field] = false;
     });
-    // this.currentState = {
-    //   title: selectField,
-    //   path: selectField
-    // };
+
     if (selectField && selectField.length) {
       this.configState[selectField] = true;
     }
@@ -120,8 +196,23 @@ export class FormComponent implements OnInit {
     return false;
   }
 
+  showEditUserPanel() {
+    if (this.configState.isSelectMethodPay) {
+      if ((!this.params.auth && !this.params.token) || this.params.auth) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   back() {
-    if (this.configState.isCard) {
+    if (this.configState.isSelectMethodPay) {
+      if (this.params.auth) {
+        this.changeState('isLogin');
+      } else {
+        this.changeState('isUser');
+      }
+    } else if (this.configState.isCard) {
       this.changeState('isSelectMethodPay');
     } else if (this.configState.isBilling || this.configState.isSelectCard) {
       this.go('Credit Card', 'isCard');
@@ -136,7 +227,7 @@ export class FormComponent implements OnInit {
     }
   }
 
-  go(title: string, patch: string) {
+  go(title: string = '', patch: string) {
     this.currentState.title = title;
     this.changeState(patch);
   }
@@ -145,16 +236,19 @@ export class FormComponent implements OnInit {
 
   createUserForm() {
     this.userForm = this.fb.group({
-      email: [this.params.user.email || '', Validators.compose([Validators.required, Validators.email])],
-      first_name: [this.params.user.first_name || '', Validators.required],
-      last_name: [this.params.user.last_name || '', Validators.required],
+      email: [this.params.email || '', Validators.compose([Validators.required, Validators.email])],
+      first_name: [this.params.first_name || '', Validators.required],
+      last_name: [this.params.last_name || '', Validators.required],
+      id: [this.params.id || '']
     });
   }
 
   getUser() {
+    this.createUserForm();
     this.payService.getUserByToken().subscribe(res => {
       if (res) {
         this.user = res;
+        this.userForm.get('id').setValue(this.user.id);
         this.changeState('isSelectMethodPay');
       }
     });
@@ -177,7 +271,7 @@ export class FormComponent implements OnInit {
   // Login
   createLoginForm() {
     this.loginForm = this.fb.group({
-      username: [this.params.user.email || '', Validators.compose([Validators.required, Validators.email])],
+      username: [this.params.email || '', Validators.compose([Validators.required, Validators.email])],
       password: ['password', Validators.required],
     });
   }
@@ -186,7 +280,7 @@ export class FormComponent implements OnInit {
     // if (localStorage.getItem(environment.authTokenKey)) {
     //     //   return this.changeState('isSelectMethodPay');
     //     // }
-    // this.loading = true;
+    this.loading = true;
 
     const controls = this.loginForm.controls;
     /** check form */
@@ -199,8 +293,8 @@ export class FormComponent implements OnInit {
 
     const data = this.loginForm.value;
     this.payService.login(data).pipe(
-      catchError(error => {
-        console.log(error);
+      catchError(res => {
+        this.payService.openSnackBar(res.error.message, true);
         return of(undefined);
       })
     ).subscribe(res => {
@@ -210,6 +304,7 @@ export class FormComponent implements OnInit {
 
         this.changeState('isSelectMethodPay');
       }
+      this.loading = false;
     });
   }
 
@@ -242,7 +337,9 @@ export class FormComponent implements OnInit {
       number: ['', [CreditCardValidators.validateCCNumber]],
       save_card: [''],
       expirationDate: ['', [CreditCardValidators.validateExpDate]],
-      cvc: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(4)]]
+      cvv: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(4)]],
+      month: [''],
+      year: ['']
     });
   }
 
@@ -255,6 +352,9 @@ export class FormComponent implements OnInit {
       );
       return;
     }
+
+    const date = this.cardForm.get('expirationDate');
+
     this.card = this.cardForm.value;
     this.go('Billing', 'isBilling');
   }
@@ -262,7 +362,7 @@ export class FormComponent implements OnInit {
   getUserCards() {
     this.payService.getUserCards().subscribe(res => {
       if (res) {
-        this.userCards = res.data.data;
+        this.userCards = res.data;
       }
     });
   }
@@ -277,15 +377,15 @@ export class FormComponent implements OnInit {
 
   createBillingForm() {
     this.billingForm = this.fb.group({
-      billing_country: ['', Validators.required],
-      billing_country_code: [''],
+      billing_country_obj: ['', Validators.required],
+      billing_country: [''],
       billing_zipcode: ['', Validators.required],
       billing_address: ['', Validators.required],
       billing_city: ['', Validators.required],
       billing_state: ['', Validators.required],
     });
     this.prepareSelectorArray(COUNTRY, this.countries);
-    this.filteredCountries = this.billingForm.get('billing_country').valueChanges
+    this.filteredCountries = this.billingForm.get('billing_country_obj').valueChanges
       .pipe(
         startWith(''),
         map(value => this._filter(value))
@@ -314,7 +414,7 @@ export class FormComponent implements OnInit {
   }
 
   selectCountry(value) {
-    this.billingForm.get('billing_country_code').setValue(value.code);
+    this.billingForm.get('billing_country').setValue(value.code);
     if (value.code === 'US') {
       this.showStateUs = true;
       this.prepareSelectorArray(STATE_US, this.states);
@@ -353,6 +453,73 @@ export class FormComponent implements OnInit {
     return result;
   }
 
+  // Pay
+  pay(methodType: string) {
+
+    this.loading = true;
+
+    let data = {
+      form_id: this.params.form,
+      method_id: this.method.id,
+      push_id: this.push_id
+    };
+
+    if (methodType === 'creditcard') {
+      if (this.card.id) {
+        const card = {
+          creditcard: {
+            id: this.card.id
+          }
+        };
+        data = {...data, ...card};
+      } else {
+
+        this.prepateCreditcardDate();
+
+        const card = {
+          creditcard: this.card,
+          user: this.userForm.value,
+          total: this.form.total,
+        };
+        data = {...data, ...card};
+      }
+    }
+    if (methodType === 'cryptocurrency') {
+      const card = {
+        user: this.userForm.value,
+      };
+      data = {...data, ...card};
+    }
+    if (methodType === 'balance') {
+
+    }
+
+    this.payService.pay(data).pipe(
+      catchError(res => {
+        this.payService.openSnackBar(res.error.message, true);
+        console.log(res);
+        return of(undefined);
+      })
+    ).subscribe(res => {
+      if (res) {
+        this.payService.openSnackBar(res.data.message, false);
+        console.log(res);
+      }
+      this.loading = false;
+
+    });
+  }
+
+  prepateCreditcardDate() {
+    const date: string = this.cardForm.get('expirationDate').value;
+    const split = date.split('/');
+    this.card.month = split[0];
+    this.card.year = split[1];
+
+    if (this.card.expirationDate) {
+      delete this.card.expirationDate;
+    }
+  }
 }
 
 

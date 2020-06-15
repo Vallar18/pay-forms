@@ -14,7 +14,7 @@ import {
   MatIconModule,
   MatInputModule, MatListModule, MatProgressSpinnerModule,
   MatRadioModule,
-  MatSelectModule, MatTabsModule
+  MatSelectModule, MatSnackBarModule, MatTabsModule
 } from '@angular/material';
 import {FormComponent} from './form/form.component';
 import {PayService} from './components/service/pay.service';
@@ -55,6 +55,7 @@ import { CreditCardDirectivesModule } from 'angular-cc-library';
     MatDialogModule,
     MatListModule,
     MatAutocompleteModule,
+    MatSnackBarModule,
     CreditCardDirectivesModule
   ],
   providers: [

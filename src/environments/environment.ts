@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  apiUrl: 'http://api.payments.dev.zenzenzen.net/',
+  apiUrl: 'https://api.payments.dev.zenzenzen.net/',
   authTokenKey: 'authce9d77b308c149d5992a80073637e4d5',
   clientId: 'client9d77b308c149d5992a80073637e4d5',
 };

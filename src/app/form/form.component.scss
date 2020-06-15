@@ -17,40 +17,52 @@
   display: flex;
   align-items: center;
   color: white;
+  position: relative;
+
+  .close-iframe-btn {
+    position: absolute;
+    right: 11px;
+    top: 5px;
+  }
 
   &__logo {
     width: 25%;
     height: auto;
     display: flex;
     align-items: center;
+    padding: 10px;
 
     img {
-      width: 100%;
+      width: 90%;
+      min-width: 72px;
     }
   }
 
   &__title {
     display: flex;
-    align-items: center;
-    justify-content: normal;
-    width: 75%;
+    justify-content: inherit;
     flex-direction: column;
+    width: 70%;
+    text-align: center;
   }
 
-  &__top {
+  &__footer {
     display: flex;
+    align-items: baseline;
+    flex-direction: column;
+    font-size: 14px;
   }
 }
 
 .pay-body {
-  background: #ffffff;
-  padding: 10px 20px;
+  padding: 20px;
+  background-color: #f8f7fb;
 
   .user-info {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 0;
+    padding: 10px 16px;
   }
 }
 
@@ -59,7 +71,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
+  padding: 10px;
   border-bottom: 1px solid #ebedf0;
 
   mat-icon {
@@ -78,6 +90,10 @@
 }
 
 .btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
   position: relative;
   -webkit-user-select: none;
@@ -88,7 +104,6 @@
   outline: 0;
   border: none;
   -webkit-tap-highlight-color: transparent;
-  display: inline-block;
   white-space: nowrap;
   text-decoration: none;
   vertical-align: baseline;
@@ -112,12 +127,86 @@
   cursor: pointer;
 }
 
-mat-list-item:hover {
+mat-list-item, .user-info {
+  border: 1px solid #f8f7fb;
+}
+
+mat-list-item:hover, .user-info:hover {
   background-color: #f8f7fb;
+  border: 1px solid #3f51b5 !important;
 }
 
 ::ng-deep .credit-card .mat-form-field {
   .mat-form-field-infix {
     display: flex;
   }
+}
+
+::ng-deep .cdk-overlay-pane {
+  position: absolute !important;
+  top: calc(50% - 260px);
+}
+
+::ng-deep .snack-bar-error {
+  color: rgba(179, 12, 12, 0.92) !important;
+}
+
+::ng-deep .mat-snack-bar-container {
+  min-width: auto !important;
+  color: rgba(104, 179, 23, 0.92);
+  background: #ffffff;
+  box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.18), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
+}
+
+::ng-deep .mat-progress-spinner circle, .mat-spinner circle {
+  stroke: #ffffff;
+}
+
+.demo-icon {
+  font-family: "zen", serif;
+  font-style: normal;
+  font-weight: normal;
+  //speak: never;
+
+  display: inline-block;
+  text-decoration: inherit;
+  //width: 1.2em;
+  margin-right: .2em;
+  text-align: center;
+  /* opacity: .8; */
+
+  /* For safety - reset parent styles, that can break glyph codes*/
+  font-variant: normal;
+  text-transform: none;
+
+  /* fix buttons height, for twitter bootstrap */
+  //line-height: 1em;
+
+  /* Animation center compensation - margins should be symmetric */
+  /* remove if not needed */
+  margin-left: .2em;
+
+  /* You can be more comfortable with increased icons size */
+  /* font-size: 120%; */
+
+  /* Font smoothing. That was taken from TWBS */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Uncomment for 3D effect */
+  /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
+}
+
+.d-flex {
+  display: flex;
+  align-items: center;
+}
+
+.d-flex-space-between {
+  display: flex !important;
+  justify-content: space-between;
+}
+.pay-status-title {
+  text-align: center;
+  color: #ff0000;
 }
